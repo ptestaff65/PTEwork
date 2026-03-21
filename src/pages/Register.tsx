@@ -2,7 +2,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth"
 import { doc, setDoc } from "firebase/firestore"
-import { auth, db } from "../firebase/firebase"
+import { auth, db } from "../firebase/firebase.ts"
 import Header from "../components/Header"
 import type { RegisterForm } from "../types/auth"
 

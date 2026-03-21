@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { collection, getDocs, query, orderBy, updateDoc, doc, limit } from "firebase/firestore"
-import { db } from "../../firebase/firebase"
+import { db } from "../../firebase/firebase.ts"
 import Header from "../../components/Header"
 import { sendRoomBookingConfirmationToUser, sendRoomBookingRejectionToUser } from "../../utils/emailService"
 

@@ -1,5 +1,5 @@
 import { collection, getDocs, addDoc, query, where, updateDoc, doc, deleteDoc, writeBatch } from 'firebase/firestore'
-import { db } from '../firebase/firebase'
+import { db } from '../firebase/firebase.ts'
 
 // Client-side cache for equipment data with TTL (5 minutes)
 interface CacheEntry {

@@ -1,5 +1,5 @@
 import { addDoc, collection } from 'firebase/firestore'
-import { db } from '../firebase/firebase'
+import { db } from '../firebase/firebase.ts'
 
 export interface Member {
   id: string

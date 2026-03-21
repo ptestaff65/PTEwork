@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { collection, getDocs, doc, getDoc } from "firebase/firestore"
-import { db } from "../../firebase/firebase"
+import { db } from "../../firebase/firebase.ts"
 import Header from "../../components/Header"
 
 interface Room {

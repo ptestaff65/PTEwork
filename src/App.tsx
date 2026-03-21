@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useState } from 'react'
 import { doc, updateDoc } from 'firebase/firestore'
-import { db } from './firebase/firebase'
+import { db } from './firebase/firebase.ts'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Home from './pages/Home'
