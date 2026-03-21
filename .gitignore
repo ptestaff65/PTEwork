@@ -35,7 +35,6 @@ functions/
 .env
 .env.local
 .env.*.local
-src/firebase/firebase.ts
 
 # IDE and OS
 .vscode/
