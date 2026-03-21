@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { collection, getDocs, query, where } from "firebase/firestore"
-import { db } from "../../../firebase/firebase.ts"
+import { db } from "../../../firebase/firebase"
 import { useAuth } from "../../../hooks/useAuth"
 import Header from "../../../components/Header"
 import type { BookingData } from "../../../App"

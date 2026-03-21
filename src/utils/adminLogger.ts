@@ -1,6 +1,6 @@
 import { collection, addDoc, doc, getDoc } from 'firebase/firestore'
 import type { User } from 'firebase/auth'
-import { db } from '../firebase/firebase.ts'
+import { db } from '../firebase/firebase'
 
 interface LogAdminActionParams {
   user: User

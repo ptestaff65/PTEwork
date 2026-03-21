@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { signOut } from "firebase/auth"
 import { collection, getDocs, query, where } from "firebase/firestore"
-import { auth, db } from "../../firebase/firebase.ts"
+import { auth, db } from "../../firebase/firebase"
 import Header from "../../components/Header"
 
 // Cache configuration

@@ -1,5 +1,5 @@
 import { collection, getDocs, writeBatch, doc, query, where } from 'firebase/firestore'
-import { db } from '../firebase/firebase.ts'
+import { db } from '../firebase/firebase'
 import type { EquipmentMaster } from './equipmentHelper'
 
 /**

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore'
-import { db } from '../../firebase/firebase.ts'
+import { db } from '../../firebase/firebase'
 import { useAuth } from '../../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import Header from '../../components/Header'

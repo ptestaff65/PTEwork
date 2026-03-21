@@ -2,7 +2,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { signInWithEmailAndPassword } from "firebase/auth"
 import { doc, getDoc } from "firebase/firestore"
-import { auth, db } from "../firebase/firebase.ts"
+import { auth, db } from "../firebase/firebase"
 import type { LoginForm } from "../types/auth"
 import Header from "../components/Header"
 

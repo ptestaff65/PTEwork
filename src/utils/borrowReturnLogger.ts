@@ -1,5 +1,5 @@
 import { doc, setDoc, collection, getDoc, updateDoc, query, where, getDocs, writeBatch } from "firebase/firestore"
-import { db } from "../firebase/firebase.ts"
+import { db } from "../firebase/firebase"
 import { findAssetInstanceBySerialCode, updateAssetInstanceCondition, syncMasterAvailableCount } from "./equipmentHelper"
 import type { User } from "firebase/auth"
 

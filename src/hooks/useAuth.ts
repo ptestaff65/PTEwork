@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
 import type { User } from 'firebase/auth'
 import { getDoc, doc } from 'firebase/firestore'
-import { auth, db } from '../firebase/firebase.ts'
+import { auth, db } from '../firebase/firebase'
 
 interface UserAuthData {
   user: User | null

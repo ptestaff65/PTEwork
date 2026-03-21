@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import Header from "../../components/Header"
 import { collection, getDocs, query, orderBy, where } from "firebase/firestore"
-import { db } from "../../firebase/firebase.ts"
+import { db } from "../../firebase/firebase"
 import { useAuth } from "../../hooks/useAuth"
 import type { BorrowTransaction } from "../../utils/borrowReturnLogger"
 

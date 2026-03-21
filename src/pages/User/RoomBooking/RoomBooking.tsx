@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom"
 import { useEffect, useState } from "react"
 import { collection, getDocs } from "firebase/firestore"
-import { db } from "../../../firebase/firebase.ts"
+import { db } from "../../../firebase/firebase"
 import Header from "../../../components/Header"
 import BookRoomButton from "../../../components/BookRoomButton"
 import ListPopularRoom from "../../../components/ListPopularRoom"

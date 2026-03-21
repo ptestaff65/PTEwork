@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { signOut } from "firebase/auth"
-import { auth } from "../firebase/firebase.ts"
+import { auth } from "../firebase/firebase"
 import { useAuth } from "../hooks/useAuth"
 import Header from "../components/Header"
 
