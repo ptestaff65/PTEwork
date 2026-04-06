@@ -21,6 +21,7 @@ interface Equipment {
   equipmentTypes: string[]
   equipmentSubTypes: string[]
   available?: boolean
+  availableCount?: number
   serialCodes?: { id: string; code: string }[]
   allIds?: string[]
   sourceCollection?: 'equipmentMaster' | 'equipment'
@@ -69,7 +70,7 @@ export default function AdminManageEquipment() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
-  const initialStockFilter = (location.state as any)?.stockFilter as "all" | "outOfStock" | "lowStock" | undefined
+  const initialStockFilter = (location.state as { stockFilter?: "all" | "outOfStock" | "lowStock" } | null)?.stockFilter as "all" | "outOfStock" | "lowStock" | undefined
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<"all" | "consumable" | "asset" | "main">("all")
   const [selectedStockStatus, setSelectedStockStatus] = useState<"all" | "outOfStock" | "lowStock">(initialStockFilter || "all")
@@ -163,6 +164,9 @@ export default function AdminManageEquipment() {
   const [loading, setLoading] = useState(true)
   const [loadingAssets, setLoadingAssets] = useState(false)
   const [loadingAssetsError, setLoadingAssetsError] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1) // Page-based pagination
+
+  const ITEMS_PER_PAGE = 10
 
   // Load equipment from Firestore — two-phase: consumables first, then full load
   const loadEquipment = async (skipCache = false) => {
@@ -190,7 +194,8 @@ export default function AdminManageEquipment() {
 
       // Phase 2: Full load including assets (equipmentMaster + assetInstances)
       try {
-        const equipmentList = await loadAllEquipment(!skipCache)
+        const result = await loadAllEquipment(!skipCache)
+        const equipmentList = result.items
         setEquipment(equipmentList as Equipment[])
         return equipmentList
       } catch (phase2Error) {
@@ -222,7 +227,7 @@ export default function AdminManageEquipment() {
 
   // Load equipment from Firestore on mount
   useEffect(() => {
-    loadEquipment(true) // Force skip cache on mount
+    loadEquipment(false) // Use cache (5-min TTL) for faster loads
   }, [])
 
   const categories = [
@@ -240,11 +245,11 @@ export default function AdminManageEquipment() {
   // Group equipment by name — memoized to avoid recalculating on every render
   const groupedEquipment = useMemo(() => {
     const grouped: { [key: string]: Equipment[] } = {}
-    equipment.forEach((item) => {
+    equipment.forEach((item: Equipment) => {
       if (!grouped[item.name]) grouped[item.name] = []
       grouped[item.name].push(item)
     })
-    return Object.entries(grouped).map(([_name, items]) => {
+    return Object.entries(grouped).map(([, items]) => {
       if (items[0].category === "asset") {
         return { ...items[0], quantity: items[0].quantity, allIds: items[0].allIds || [] }
       }
@@ -255,7 +260,7 @@ export default function AdminManageEquipment() {
   // Get unique equipment types — memoized
   const uniqueEquipmentTypes = useMemo(() => {
     const types = new Set<string>()
-    groupedEquipment.forEach((item: any) => {
+    groupedEquipment.forEach((item: Equipment) => {
       if (item.equipmentTypes && Array.isArray(item.equipmentTypes)) {
         item.equipmentTypes.forEach((type: string) => types.add(type))
       }
@@ -264,7 +269,7 @@ export default function AdminManageEquipment() {
   }, [groupedEquipment])
 
   // Filter equipment — memoized
-  const filteredEquipment = useMemo(() => groupedEquipment.filter((item: any) => {
+  const filteredEquipment = useMemo(() => groupedEquipment.filter((item: Equipment) => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = selectedCategory === "all" || item.category === selectedCategory
     const matchesEquipmentType = selectedEquipmentType === "all" ||
@@ -291,6 +296,14 @@ export default function AdminManageEquipment() {
     }
     return matchesSearch && matchesCategory && matchesStockStatus && matchesEquipmentType && matchesEquipmentSubType
   }), [groupedEquipment, searchTerm, selectedCategory, selectedEquipmentType, selectedEquipmentSubType, selectedStockStatus])
+
+  // Get only displayed items based on current page
+  const displayedEquipment = filteredEquipment.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, selectedCategory, selectedEquipmentType, selectedEquipmentSubType, selectedStockStatus])
 
   const handleAddEquipment = () => {
     setAddEquipmentForm({
@@ -405,7 +418,7 @@ export default function AdminManageEquipment() {
     }
   }
 
-  const handleIssue = async (equipmentName: string, itemAllIds: any) => {
+  const handleIssue = async (equipmentName: string, itemAllIds: string[]) => {
     console.log("handleIssue called:", { equipmentName, itemAllIds, itemAllIdsLength: itemAllIds.length })
     const isAsset = equipment.find(e => e.name === equipmentName)?.category === "asset"
     console.log("isAsset:", isAsset)
@@ -1216,7 +1229,7 @@ export default function AdminManageEquipment() {
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-sm text-gray-500">
-                  พบ <span className="font-semibold text-blue-600">{filteredEquipment.length}</span> รายการ
+                  พบ <span className="font-semibold text-blue-600">{displayedEquipment.length}</span> รายการ
                 </span>
                 <span className={`text-gray-400 transition-transform ${showStockStatusFilter ? 'rotate-180' : ''}`}>
                   ▼
@@ -1234,7 +1247,7 @@ export default function AdminManageEquipment() {
                     {categories.map((cat) => (
                       <button
                         key={cat.key}
-                        onClick={() => setSelectedCategory(cat.key as any)}
+                        onClick={() => setSelectedCategory(cat.key as "all" | "consumable" | "asset" | "main")}
                         className={`
                           px-3 py-1.5 rounded-full text-xs font-medium transition
                           ${
@@ -1257,7 +1270,7 @@ export default function AdminManageEquipment() {
                     {stockStatuses.map((status) => (
                       <button
                         key={status.key}
-                        onClick={() => setSelectedStockStatus(status.key as any)}
+                        onClick={() => setSelectedStockStatus(status.key as "all" | "outOfStock" | "lowStock")}
                         className={`
                           px-3 py-1.5 rounded-full text-xs font-medium transition
                           ${
@@ -1393,8 +1406,9 @@ export default function AdminManageEquipment() {
                 )}
               </>
             )}
-            {!loading && filteredEquipment.length > 0 ? (
-              filteredEquipment.map((item: any) => (
+            {!loading && displayedEquipment.length > 0 ? (
+              <>
+                {displayedEquipment.map((item: Equipment) => (
 
                 <div
                   key={item.name}
@@ -1463,7 +1477,7 @@ export default function AdminManageEquipment() {
                   {/* Action Buttons */}
                   <div className="flex gap-2">
                     <button
-                      onClick={async () => await handleIssue(item.name, item.allIds)}
+                      onClick={async () => await handleIssue(item.name, item.allIds || [])}
                       className="
                         flex-1
                         py-2
@@ -1494,7 +1508,43 @@ export default function AdminManageEquipment() {
                     </button>
                   </div>
                 </div>
-              ))
+              ))}
+
+                {/* Pagination Controls */}
+                {filteredEquipment.length > ITEMS_PER_PAGE && (
+                  <div className="col-span-full flex justify-center items-center gap-3 py-6">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 rounded-lg border border-orange-500 text-orange-500 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                      ← ก่อนหน้า
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">หน้า</span>
+                      <input
+                        type="number"
+                        value={currentPage}
+                        onChange={(e) => {
+                          const page = Math.max(1, Math.min(Math.ceil(filteredEquipment.length / ITEMS_PER_PAGE), parseInt(e.target.value) || 1))
+                          setCurrentPage(page)
+                        }}
+                        min="1"
+                        max={Math.ceil(filteredEquipment.length / ITEMS_PER_PAGE)}
+                        className="w-12 px-2 py-1 border border-gray-300 rounded text-center text-sm"
+                      />
+                      <span className="text-sm text-gray-600">จาก {Math.ceil(filteredEquipment.length / ITEMS_PER_PAGE)}</span>
+                    </div>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(Math.ceil(filteredEquipment.length / ITEMS_PER_PAGE), prev + 1))}
+                      disabled={currentPage === Math.ceil(filteredEquipment.length / ITEMS_PER_PAGE)}
+                      className="px-4 py-2 rounded-lg border border-orange-500 text-orange-500 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                      ถัดไป →
+                    </button>
+                  </div>
+                )}
+              </>
             ) : !loadingAssets ? (
               <div className="w-full text-center text-gray-500 py-8">
                 ไม่พบอุปกรณ์ที่ค้นหา
@@ -1749,7 +1799,7 @@ export default function AdminManageEquipment() {
                 <label className="text-xs font-semibold text-gray-700 block mb-2">หมวดหมู่</label>
                 <select
                   value={addEquipmentForm.category}
-                  onChange={(e) => setAddEquipmentForm({ ...addEquipmentForm, category: e.target.value as any, ids: [], quantity: "" })}
+                  onChange={(e) => setAddEquipmentForm({ ...addEquipmentForm, category: e.target.value as "consumable" | "asset" | "main", ids: [], quantity: "" })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-full text-sm focus:outline-none focus:border-orange-500"
                 >
                   <option value="consumable">วัสดุสิ้นเปลือง</option>

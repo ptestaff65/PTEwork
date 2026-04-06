@@ -1,3 +1,40 @@
+/**
+ * EQUIPMENT MANAGEMENT SYSTEM
+ * ==============================
+ * 
+ * TWO-COLLECTION ARCHITECTURE:
+ * 
+ * 1. CONSUMABLES & MAIN ITEMS (equipment collection)
+ *    - Documents: { id, name, category: 'consumable'|'main', quantity, unit, ... }
+ *    - Simple quantity tracking: total stock count
+ *    - No serial codes or condition tracking
+ *    - Examples: electrodes (rolls), oil (liters), wood (sheets)
+ * 
+ * 2. ASSETS (two related collections)
+ *    a) equipmentMaster: Master record for each asset type
+ *       - { id, name, category: 'asset', quantity, equipmentTypes, ... }
+ *       - quantity = total instances of this asset
+ *       - syncedQuantity/syncedAvailable = synced borrow counts
+ *    
+ *    b) assetInstances: Individual physical units
+ *       - { id, equipmentId, serialCode, available, condition, ... }
+ *       - serialCode = unique identifier (e.g., 'WM-001', 'LM-002')
+ *       - available = boolean (true if not borrowed)
+ *       - condition = optional condition report (good/damage/etc)
+ * 
+ * PERFORMANCE OPTIMIZATIONS:
+ * - Parallel collection queries (Promise.all for 3 collections)
+ * - Client-side caching with 5-minute TTL
+ * - Optional pagination support (slice-based, 30 items/page)
+ * - Only loads data when necessary (cache check first)
+ * 
+ * PAGINATION STRATEGY:
+ * - Loads all documents from Firestore (no limit() in queries)
+ * - Slices results in memory (pageLimit & pageIndex parameters)
+ * - Future: Can add limit() in queries for true server-side pagination
+ * - Returns: { items: [...], hasMore: boolean, total: number }
+ */
+
 import { collection, getDocs, getDoc, addDoc, query, where, updateDoc, doc, deleteDoc, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase/firebase'
 
@@ -62,12 +99,17 @@ export interface EquipmentDisplay {
  * Load all equipment including consumables, assets, and their instances
  * WITH CACHING: Returns cached data if available (TTL: 5 minutes)
  * BATCHED: All three collections read together to minimize round trips
+ * WITH PAGINATION: Optional limit parameter for paginated loading
  */
-export async function loadAllEquipment(useCache = true): Promise<EquipmentDisplay[]> {
+export async function loadAllEquipment(useCache = true, pageLimit?: number, pageIndex = 0): Promise<{ items: EquipmentDisplay[]; hasMore: boolean; total: number }> {
   try {
-    // Check cache first
-    if (useCache && equipmentCache && Date.now() - equipmentCache.timestamp < CACHE_TTL) {
-      return equipmentCache.data
+    // Check cache first (only if no pagination)
+    if (useCache && !pageLimit && equipmentCache && Date.now() - equipmentCache.timestamp < CACHE_TTL) {
+      return {
+        items: equipmentCache.data,
+        hasMore: false,
+        total: equipmentCache.data.length
+      }
     }
 
     const results: EquipmentDisplay[] = []
@@ -168,16 +210,28 @@ export async function loadAllEquipment(useCache = true): Promise<EquipmentDispla
       })
     })
 
-    // Cache the results
-    equipmentCache = {
-      data: results,
-      timestamp: Date.now()
+    // Apply pagination if limit is specified
+    const startIndex = pageLimit ? pageIndex * pageLimit : 0
+    const endIndex = pageLimit ? startIndex + pageLimit : results.length
+    const paginatedResults = results.slice(startIndex, endIndex)
+    const hasMore = pageLimit ? endIndex < results.length : false
+
+    // Cache the full results only if not paginating
+    if (!pageLimit) {
+      equipmentCache = {
+        data: results,
+        timestamp: Date.now()
+      }
     }
 
-    return results
+    return {
+      items: paginatedResults,
+      hasMore: hasMore,
+      total: results.length
+    }
   } catch (error) {
     console.error('Error loading equipment:', error)
-    return []
+    return { items: [], hasMore: false, total: 0 }
   }
 }
 

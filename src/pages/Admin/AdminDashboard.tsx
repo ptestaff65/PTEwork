@@ -5,29 +5,28 @@ import { collection, getDocs, query, where } from "firebase/firestore"
 import { auth, db } from "../../firebase/firebase"
 import Header from "../../components/Header"
 import { loadAllEquipment } from "../../utils/equipmentHelper"
-// import { migrateAllImagesToStorage } from "../../utils/migrateImagesToStorage"
-// import type { MigrationResult } from "../../utils/migrateImagesToStorage"
 
 // Cache configuration
-interface CacheData {
-  data: any
+interface CacheData<T> {
+  data: T
   timestamp: number
 }
 
-const dashboardCache: { lowStock?: CacheData; pendingBookings?: CacheData; outOfStockAssets?: CacheData } = {}
+const dashboardCache: { lowStock?: CacheData<Equipment[]>; pendingBookings?: CacheData<RoomBooking[]>; outOfStockAssets?: CacheData<Equipment[]> } = {}
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
-const getCachedData = (key: 'lowStock' | 'pendingBookings' | 'outOfStockAssets'): any => {
-  const cached = dashboardCache[key]
+const getCachedData = <T,>(key: 'lowStock' | 'pendingBookings' | 'outOfStockAssets'): T | null => {
+  const cached = dashboardCache[key as keyof typeof dashboardCache]
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
     console.log(`Using cached ${key}`)
-    return cached.data
+    return cached.data as T
   }
   return null
 }
 
-const setCachedData = (key: 'lowStock' | 'pendingBookings' | 'outOfStockAssets', data: any) => {
-  dashboardCache[key] = { data, timestamp: Date.now() }
+const setCachedData = <T,>(key: 'lowStock' | 'pendingBookings' | 'outOfStockAssets', data: T) => {
+  const cache = dashboardCache as Record<string, CacheData<unknown>>
+  cache[key] = { data, timestamp: Date.now() }
 }
 
 interface Equipment {
@@ -54,16 +53,14 @@ export default function AdminDashboard() {
   const [lowStockItems, setLowStockItems] = useState<Equipment[]>([])
   const [outOfStockAssets, setOutOfStockAssets] = useState<{ id: string; name: string }[]>([])
   const [pendingBookings, setPendingBookings] = useState<RoomBooking[]>([])
-  // const [migrating, setMigrating] = useState(false)
-  // const [migrationProgress, setMigrationProgress] = useState("")
-  // const [migrationDone, setMigrationDone] = useState<null | { equipment: MigrationResult; equipmentMaster: MigrationResult; rooms: MigrationResult }>(null)
 
   // Load low stock items and out of stock assets using unified equipmentHelper
   useEffect(() => {
     const loadEquipmentStatus = async () => {
       try {
         // Load all equipment with proper caching and synced counts
-        const allEquipment = await loadAllEquipment()
+        const result = await loadAllEquipment()
+        const allEquipment = result.items
 
         // Filter low stock items (consumables with quantity < threshold)
         const LOW_STOCK_THRESHOLD = 10
@@ -102,7 +99,7 @@ export default function AdminDashboard() {
     const loadPendingBookings = async () => {
       try {
         // Check cache first
-        const cached = getCachedData('pendingBookings')
+        const cached = getCachedData<RoomBooking[]>('pendingBookings')
         if (cached) {
           setPendingBookings(cached)
           return
@@ -143,24 +140,6 @@ export default function AdminDashboard() {
       console.error('Error logging out:', error)
     }
   }
-
-  // const handleMigrateImages = async () => {
-  //   if (!window.confirm('ย้ายรูปภาพทั้งหมดไปยัง Firebase Storage?\n(ทำครั้งเดียวเท่านั้น หลังจากทำแล้วหน้าเว็บจะโหลดเร็วขึ้นมาก)')) return
-  //   setMigrating(true)
-  //   setMigrationDone(null)
-  //   try {
-  //     const results = await migrateAllImagesToStorage((col, current, total, _id) => {
-  //       setMigrationProgress(`${col}: ${current}/${total}`)
-  //     })
-  //     setMigrationDone(results)
-  //   } catch (err) {
-  //     console.error('Migration error:', err)
-  //     alert('เกิดข้อผิดพลาดในการย้ายรูปภาพ ดูรายละเอียดใน Console')
-  //   } finally {
-  //     setMigrating(false)
-  //     setMigrationProgress("")
-  //   }
-  // }
 
   return (
     <div
@@ -383,42 +362,6 @@ export default function AdminDashboard() {
               จัดการผู้ใช้งาน
             </button>
           </div>
-
-          {/* Image Migration Tool */}
-          {/* <button
-            onClick={handleMigrateImages}
-            disabled={migrating}
-            className="
-              w-full
-              mt-6
-              py-3
-              rounded-full
-              border border-gray-400
-              text-gray-700
-              text-sm font-medium
-              hover:bg-gray-100
-              transition
-              disabled:opacity-50
-            "
-          >
-            {migrating ? `⏳ กำลังย้ายรูปภาพ... ${migrationProgress}` : '🖼️ ย้ายรูปภาพไปยัง Storage (ทำ 1 ครั้ง)'}
-          </button> */}
-
-          {/* Migration result */}
-          {/* {migrationDone && (
-            <div className="w-full mt-4 bg-green-50 border border-green-200 rounded-lg p-4 text-sm text-green-800">
-              <p className="font-semibold mb-1">✅ ย้ายรูปภาพสำเร็จ!</p>
-              {(['equipment', 'equipmentMaster', 'rooms'] as const).map((col) => {
-                const r = migrationDone[col]
-                return (
-                  <p key={col} className="text-xs">
-                    {col}: ย้าย {r.migrated} | ข้าม {r.skipped} | ผิดพลาด {r.failed}
-                    {r.errors.length > 0 && <span className="text-red-600"> ({r.errors.join(', ')})</span>}
-                  </p>
-                )
-              })}
-            </div>
-          )} */}
 
           {/* Logout Button */}
           <button
