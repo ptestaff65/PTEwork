@@ -29,12 +29,12 @@ node_modules/
 # Firebase
 .firebase/
 .firebaserc
-functions/
 
 # Environment files with sensitive data
 .env
 .env.local
 .env.*.local
+src/firebase/firebase.ts
 
 # IDE and OS
 .vscode/
@@ -47,3 +47,4 @@ Thumbs.db
 build/
 out/
 .next/
+.claude
