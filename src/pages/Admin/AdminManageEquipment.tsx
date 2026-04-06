@@ -164,9 +164,6 @@ export default function AdminManageEquipment() {
   const [loading, setLoading] = useState(true)
   const [loadingAssets, setLoadingAssets] = useState(false)
   const [loadingAssetsError, setLoadingAssetsError] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1) // Page-based pagination
-
-  const ITEMS_PER_PAGE = 10
 
   // Load equipment from Firestore — two-phase: consumables first, then full load
   const loadEquipment = async (skipCache = false) => {
@@ -297,12 +294,12 @@ export default function AdminManageEquipment() {
     return matchesSearch && matchesCategory && matchesStockStatus && matchesEquipmentType && matchesEquipmentSubType
   }), [groupedEquipment, searchTerm, selectedCategory, selectedEquipmentType, selectedEquipmentSubType, selectedStockStatus])
 
-  // Get only displayed items based on current page
-  const displayedEquipment = filteredEquipment.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+  // Get only displayed items — show all filtered equipment
+  const displayedEquipment = filteredEquipment
 
-  // Reset to first page when filters change
+  // Reset when filters change
   useEffect(() => {
-    setCurrentPage(1)
+    // No pagination to reset
   }, [searchTerm, selectedCategory, selectedEquipmentType, selectedEquipmentSubType, selectedStockStatus])
 
   const handleAddEquipment = () => {
@@ -1509,41 +1506,6 @@ export default function AdminManageEquipment() {
                   </div>
                 </div>
               ))}
-
-                {/* Pagination Controls */}
-                {filteredEquipment.length > ITEMS_PER_PAGE && (
-                  <div className="col-span-full flex justify-center items-center gap-3 py-6">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                      disabled={currentPage === 1}
-                      className="px-4 py-2 rounded-lg border border-orange-500 text-orange-500 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                    >
-                      ← ก่อนหน้า
-                    </button>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">หน้า</span>
-                      <input
-                        type="number"
-                        value={currentPage}
-                        onChange={(e) => {
-                          const page = Math.max(1, Math.min(Math.ceil(filteredEquipment.length / ITEMS_PER_PAGE), parseInt(e.target.value) || 1))
-                          setCurrentPage(page)
-                        }}
-                        min="1"
-                        max={Math.ceil(filteredEquipment.length / ITEMS_PER_PAGE)}
-                        className="w-12 px-2 py-1 border border-gray-300 rounded text-center text-sm"
-                      />
-                      <span className="text-sm text-gray-600">จาก {Math.ceil(filteredEquipment.length / ITEMS_PER_PAGE)}</span>
-                    </div>
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(Math.ceil(filteredEquipment.length / ITEMS_PER_PAGE), prev + 1))}
-                      disabled={currentPage === Math.ceil(filteredEquipment.length / ITEMS_PER_PAGE)}
-                      className="px-4 py-2 rounded-lg border border-orange-500 text-orange-500 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                    >
-                      ถัดไป →
-                    </button>
-                  </div>
-                )}
               </>
             ) : !loadingAssets ? (
               <div className="w-full text-center text-gray-500 py-8">
