@@ -497,7 +497,6 @@ export default function EquipmentSelection({ setCartItems }: EquipmentSelectionP
                       { key: "all", label: "ทั้งหมด" },
                       { key: "consumable", label: "วัสดุสิ้นเปลือง" },
                       { key: "asset", label: "ครุภัณฑ์" },
-                      { key: "main", label: "เครื่องจักร" },
                     ] as const).map((cat) => (
                       <button
                         key={cat.key}
